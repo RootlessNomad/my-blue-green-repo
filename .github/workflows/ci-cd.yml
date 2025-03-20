@@ -4,16 +4,15 @@ on:
   push:
     branches:
       - main
-      - test
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: autopilot-cluster-1
-  GKE_ZONE: us-central1-a
-  IMAGE: blue-app
-  IMAGE_TAG: latest
-  GAR_ZONE: us-central1
-  GAR_REPO: my-docker-repo
+  GKE_CLUSTER: my-gke-cluster    # cluster name
+  GKE_ZONE: us-central1-a   # cluster zone
+  IMAGE: micro # image name
+  IMAGE_TAG: test # image tag
+  GAR_ZONE: us-central1 # artifact registry zone
+  GAR_REPO: my-docker-repo # artifact registry repository
 
 jobs:
   setup-build-publish-deploy:
@@ -22,32 +21,43 @@ jobs:
     environment: production
 
     steps:
-    - name: Checkout Code
+    - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
+    # Setup gcloud CLI
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
       with:
-        credentials_json: ${{ secrets.GKE_SA_KEY }}
+        credentials_json: '${{ secrets.GKE_SA_KEY }}'
 
-    - name: Configure Docker for Artifact Registry
-      run: |
-        gcloud auth configure-docker ${GAR_ZONE}-docker.pkg.dev
+    # Configure Docker to use the gcloud command-line tool as a credential
+    # helper for authentication
+    - name: Docker configuration
+      run: |-
+        gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://$GAR_ZONE-docker.pkg.dev
 
+    # Get the GKE credentials so we can deploy to the cluster
     - name: Set up GKE credentials
-      uses: google-github-actions/get-gke-credentials@v2
+      uses: google-github-actions/get-gke-credentials@v0
       with:
         cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_ZONE }}
 
-    - name: Build Docker image
-      run: |
-        docker build --platform linux/amd64 -t ${GAR_ZONE}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${IMAGE}:${IMAGE_TAG} .
+    # Build the Docker image
+    - name: Build
+      run: |-
+        docker build \
+          --tag "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:$IMAGE_TAG" \
+          --build-arg GITHUB_SHA="$GITHUB_SHA" \
+          --build-arg GITHUB_REF="$GITHUB_REF" \
+          .
+    # Push the Docker image to Google Container Registry
+    - name: Publish
+      run: |-
+        docker push "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:$IMAGE_TAG"
 
-    - name: Push Docker image to Artifact Registry
-      run: |
-        docker push ${GAR_ZONE}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${IMAGE}:${IMAGE_TAG}
-
-    - name: Deploy to GKE
-      run: |
-        kubectl set image deployment/${GITHUB_REF##*/}-app ${GITHUB_REF##*/}-app=${GAR_ZONE}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${IMAGE}:${IMAGE_TAG}
+    # Deploy the Docker image to the GKE cluster
+    - name: Deploy
+      run: |-
+        kubectl apply -f deploy.yml
+        kubectl get pods
