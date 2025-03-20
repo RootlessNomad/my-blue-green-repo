@@ -11,7 +11,6 @@ env:
   REGION: us-central1-a
   REPO: my-docker-repo
   CLUSTER: my-gke-cluster
-  USE_GKE_GCLOUD_AUTH_PLUGIN: True
 
 jobs:
   deploy:
@@ -27,23 +26,14 @@ jobs:
           gcloud auth configure-docker us-central1-docker.pkg.dev
           gcloud config set project $PROJECT_ID
           gcloud config set compute/zone $REGION
-          gcloud auth list
+          gcloud container clusters get-credentials $CLUSTER --zone $REGION --project $PROJECT_ID
           rm key.json
-
-      - name: Install GKE Auth Plugin
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
 
       - name: Build & Push Docker Image
         run: |
           IMAGE_TAG=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO/${GITHUB_REF##*/}-app:latest
           docker build --platform linux/amd64 -t $IMAGE_TAG .
           docker push $IMAGE_TAG
-
-      - name: Get GKE Credentials
-        run: |
-          gcloud container clusters get-credentials $CLUSTER --zone $REGION --project $PROJECT_ID
 
       - name: Deploy to GKE
         run: |
