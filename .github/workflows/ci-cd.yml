@@ -10,7 +10,7 @@ env:
   GKE_CLUSTER: my-gke-cluster    # cluster name
   GKE_ZONE: us-central1-a   # cluster zone
   IMAGE: micro # image name
-  IMAGE_TAG: test # image tag
+  IMAGE_TAG: latest # image tag
   GAR_ZONE: us-central1 # artifact registry zone
   GAR_REPO: my-docker-repo # artifact registry repository
 
@@ -59,6 +59,6 @@ jobs:
     # Deploy the Docker image to the GKE cluster
     - name: Deploy to GKE
       run: |
-        gcloud container clusters get-credentials \$GKE_CLUSTER --zone \$GKE_ZONE
+        gcloud container clusters get-credentials $GKE_CLUSTER --zone=$GKE_ZONE --project=$PROJECT_ID
         kubectl set image deployment/\${GITHUB_REF##*/}-app \${GITHUB_REF##*/}-app=\$IMAGE_TAG
 
