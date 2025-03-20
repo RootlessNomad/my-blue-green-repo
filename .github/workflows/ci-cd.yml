@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline for GKE
 
 on:
   push:
@@ -11,6 +11,7 @@ env:
   REGION: us-central1-a
   REPO: my-docker-repo
   CLUSTER: my-gke-cluster
+  USE_GKE_GCLOUD_AUTH_PLUGIN: True
 
 jobs:
   deploy:
@@ -19,22 +20,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Authenticate with GCP
+      - name: Authenticate with Google Cloud
         run: |
           echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > key.json
           gcloud auth activate-service-account --key-file=key.json
-          gcloud auth list
+          gcloud auth configure-docker us-central1-docker.pkg.dev
           gcloud config set project $PROJECT_ID
-          gcloud config set compute/region us-central1
-          gcloud config set compute/zone us-central1-a
+          gcloud config set compute/zone $REGION
+          gcloud auth list
+          rm key.json
 
       - name: Install GKE Auth Plugin
         run: |
-          sudo apt-get update && sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
-          echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
-
-      - name: Configure Docker
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
 
       - name: Build & Push Docker Image
         run: |
@@ -45,8 +44,8 @@ jobs:
       - name: Get GKE Credentials
         run: |
           gcloud container clusters get-credentials $CLUSTER --zone $REGION --project $PROJECT_ID
-          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
       - name: Deploy to GKE
         run: |
-          kubectl set image deployment/${GITHUB_REF##*/}-app ${GITHUB_REF##*/}-app=$IMAGE_TAG
+          IMAGE_TAG=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO/${GITHUB_REF##*/}-app:latest
+          kubectl set image deployment/${GITHUB_REF##*/}-app ${GITHUB_REF##*/}-app=$IMAGE_TAG --namespace=default
