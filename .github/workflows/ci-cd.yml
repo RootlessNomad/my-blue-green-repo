@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for GKE
+name: CI/CD Pipeline for GKE (Without kubectl)
 
 on:
   push:
@@ -35,7 +35,6 @@ jobs:
           docker build --platform linux/amd64 -t $IMAGE_TAG .
           docker push $IMAGE_TAG
 
-      - name: Deploy to GKE
+      - name: Deploy to GKE Without kubectl
         run: |
-          IMAGE_TAG=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO/${GITHUB_REF##*/}-app:latest
-          kubectl set image deployment/${GITHUB_REF##*/}-app ${GITHUB_REF##*/}-app=$IMAGE_TAG --namespace=default
+          gcloud beta run deploy ${GITHUB_REF##*/}-app             --image=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO/${GITHUB_REF##*/}-app:latest             --platform=gke             --cluster=$CLUSTER             --region=$REGION             --allow-unauthenticated
