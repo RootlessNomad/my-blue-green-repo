@@ -38,7 +38,7 @@ jobs:
 
     # Get the GKE credentials so we can deploy to the cluster
     - name: Set up GKE credentials
-      uses: google-github-actions/get-gke-credentials@v0
+      uses: google-github-actions/get-gke-credentials@v2
       with:
         cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_ZONE }}
@@ -57,8 +57,8 @@ jobs:
         docker push "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:$IMAGE_TAG"
 
     # Deploy the Docker image to the GKE cluster
-    - name: Deploy
-      run: |-
-        kubectl apply -f deploy.yml
-        kubectl get pods
+    - name: Deploy to GKE
+      run: |
+        gcloud container clusters get-credentials \$CLUSTER --region \$REGION
+        kubectl set image deployment/\${GITHUB_REF##*/}-app \${GITHUB_REF##*/}-app=\$IMAGE_TAG
 
