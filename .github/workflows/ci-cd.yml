@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: igneous-access-450718-i5
-  REGION: us-central1
+  REGION: us-central1-a
   REPO: my-docker-repo
   CLUSTER: my-gke-cluster
 
@@ -27,6 +27,9 @@ jobs:
 
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Verify Files Exist
+        run: ls -la
 
       - name: Build & Push Docker Image
         run: |
