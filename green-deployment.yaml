@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: green-app
-          image: us-central1-docker.pkg.dev/igneous-access-450718-i5/my-docker-repo/green-app:latest
+          image: us-central1-docker.pkg.dev/myproject-v2-454314/my-docker-repo/mi-image:latest
           ports:
             - containerPort: 80
