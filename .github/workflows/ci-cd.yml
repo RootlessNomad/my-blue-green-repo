@@ -28,10 +28,14 @@ jobs:
           gcloud config set compute/region us-central1
           gcloud config set compute/zone us-central1-a
 
-      - name: Install GKE Auth Plugin
+      - name: Manually Install GKE Auth Plugin
         run: |
-          sudo apt-get update && sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
-          export USE_GKE_GCLOUD_AUTH_PLUGIN=True  # ✅ Enable plugin for kubectl
+          curl -LO https://storage.googleapis.com/cloud-sdk-release/google-cloud-sdk.tar.gz
+          tar -xzf google-cloud-sdk.tar.gz
+          ./google-cloud-sdk/install.sh -q
+          ./google-cloud-sdk/bin/gcloud components install gke-gcloud-auth-plugin -q
+          echo "export PATH=$PATH:$HOME/google-cloud-sdk/bin" >> $GITHUB_ENV
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -45,7 +49,7 @@ jobs:
       - name: Get GKE Credentials
         run: |
           gcloud container clusters get-credentials $CLUSTER --zone $REGION --project $PROJECT_ID
-          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV  # ✅ Ensures authentication works
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
       - name: Deploy to GKE
         run: |
