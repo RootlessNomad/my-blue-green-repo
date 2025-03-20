@@ -4,7 +4,7 @@ metadata:
   name: blue-green-service
 spec:
   selector:
-    app: blue-app  # Start with Blue version
+    app: green-app  # Start with Blue version
   ports:
     - protocol: TCP
       port: 80
