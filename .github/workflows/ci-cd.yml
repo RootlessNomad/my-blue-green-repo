@@ -11,8 +11,8 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_CLUSTER: autopilot-cluster-1    # cluster name
   GKE_ZONE: us-central1   # cluster zone
-  IMAGE: mi-image # image name
-  IMAGE_TAG: latest # image tag
+  #IMAGE: mi-image # image name
+  #IMAGE_TAG: latest # image tag
   GAR_ZONE: us-central1 # artifact registry zone
   GAR_REPO: my-docker-repo # artifact registry repository
 
@@ -49,17 +49,17 @@ jobs:
     - name: Build
       run: |-
         docker build \
-          --tag "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:$IMAGE_TAG" \
-          --build-arg GITHUB_SHA="$GITHUB_SHA" \
-          --build-arg GITHUB_REF="$GITHUB_REF" \
+          IMAGE_TAG=us-central1-docker.pkg.dev/\$PROJECT_ID/\$GAR_REPO/\${GITHUB_REF##*/}-app:latest
+          docker build --platform linux/amd64 -t \$IMAGE_TAG .
+          docker push \$IMAGE_TAG
           .
     # Push the Docker image to Google Container Registry
-    - name: Publish
-      run: |-
-        docker push "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:$IMAGE_TAG"
+   # - name: Publish
+    #  run: |-
+     #   docker push "$GAR_ZONE-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$IMAGE:$IMAGE_TAG"
 
     # Deploy the Docker image to the GKE cluster
     - name: Deploy
       run: |-
-        kubectl apply -f blue-deployment.yaml
-        kubectl get pods
+          gcloud container clusters get-credentials \$GKE_CLUSTER --region \$GKE_ZONE
+          kubectl set image deployment/\${GITHUB_REF##*/}-app \${GITHUB_REF##*/}-app=\$IMAGE_TAG
