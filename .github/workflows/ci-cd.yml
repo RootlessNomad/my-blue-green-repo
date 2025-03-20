@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: my-gke-cluster
+  GKE_CLUSTER: autopilot-cluster-1
   GKE_ZONE: us-central1-a
   IMAGE: blue-app
   IMAGE_TAG: latest
@@ -22,13 +22,13 @@ jobs:
     environment: production
 
     steps:
-    - name: Checkout
+    - name: Checkout Code
       uses: actions/checkout@v3
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}'
+        credentials_json: ${{ secrets.GKE_SA_KEY }}
 
     - name: Configure Docker for Artifact Registry
       run: |
