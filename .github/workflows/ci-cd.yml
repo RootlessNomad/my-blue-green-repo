@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: igneous-access-450718-i5
-  REGION: us-central1-a  # ✅ Updated to us-central1-a
+  REGION: us-central1-a
   REPO: my-docker-repo
   CLUSTER: my-gke-cluster
 
@@ -24,9 +24,14 @@ jobs:
           echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > key.json
           gcloud auth activate-service-account --key-file=key.json
           gcloud auth list
-          gcloud config set project $PROJECT_ID  # ✅ Explicitly set project
-          gcloud config set compute/region us-central1  # ✅ Set default region
-          gcloud config set compute/zone us-central1-a  # ✅ Set default zone
+          gcloud config set project $PROJECT_ID
+          gcloud config set compute/region us-central1
+          gcloud config set compute/zone us-central1-a
+
+      - name: Install GKE Auth Plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=True  # ✅ Enable plugin for kubectl
 
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -39,7 +44,8 @@ jobs:
 
       - name: Get GKE Credentials
         run: |
-          gcloud container clusters get-credentials $CLUSTER --zone $REGION --project $PROJECT_ID  # ✅ Using zone instead of region
+          gcloud container clusters get-credentials $CLUSTER --zone $REGION --project $PROJECT_ID
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV  # ✅ Ensures authentication works
 
       - name: Deploy to GKE
         run: |
