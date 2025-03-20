@@ -1,0 +1,39 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - test
+
+env:
+  PROJECT_ID: igneous-access-450718-i5
+  REGION: us-central1
+  REPO: my-docker-repo
+  CLUSTER: my-gke-cluster
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Authenticate with GCP
+        run: echo "$GCLOUD_AUTH" | gcloud auth activate-service-account --key-file=-
+        env:
+          GCLOUD_AUTH: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build & Push Docker Image
+        run: |
+          IMAGE_TAG=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO/${GITHUB_REF##*/}-app:latest
+          docker build --platform linux/amd64 -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
+
+      - name: Deploy to GKE
+        run: |
+          gcloud container clusters get-credentials $CLUSTER --region $REGION
+          kubectl set image deployment/${GITHUB_REF##*/}-app ${GITHUB_REF##*/}-app=$IMAGE_TAG
