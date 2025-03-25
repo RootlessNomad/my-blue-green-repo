@@ -62,4 +62,5 @@ jobs:
       run: |-
         kubectl apply -f blue-deployment.yaml
         kubectl apply -f service.yaml
+	kubectl rollout restart deployment blue-app green-app
         kubectl get pods
