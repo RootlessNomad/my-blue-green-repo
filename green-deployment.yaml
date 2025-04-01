@@ -15,5 +15,6 @@ spec:
       containers:
         - name: green-app
           image: us-central1-docker.pkg.dev/myproject-v2-454314/my-docker-repo/green-image:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
